@@ -172,11 +172,12 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             requestData(baseURL + baseIndex);
         }
         int tempInt = (totalIndex - 1) % 4;
-        ImageNode tempNode = imagesList.get(tempInt);
+
         if (baseIndex == 0 && totalIndex == 1) {
             mPrevButton.setEnabled(false);
         }
-        loadImage(tempNode.getImageURL(), mImageView);
+        if(imagesList!=null && imagesList.size()<tempInt){ImageNode tempNode = imagesList.get(tempInt);
+        loadImage(tempNode.getImageURL(), mImageView);}
 
     }
 
