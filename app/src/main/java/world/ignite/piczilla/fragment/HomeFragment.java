@@ -46,8 +46,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     private List<ImageNode> imagesList;
     private ProgressBar pb;
 
-    // private HashMap<String, Bitmap> drawableMap;
     private LruCache<String, Bitmap> cache;
+    private List<LazyImageLoadTask> lazyImageLoadTasks;
+    private List<MyTask> myTaskList;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -61,12 +62,14 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         final int cacheSize = maxMemory / 8;
 
         cache = new LruCache<>(cacheSize);
-        tasks = new ArrayList<>();
+        lazyImageLoadTasks = new ArrayList<>();
+        myTaskList = new ArrayList<>();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        super.onCreateView(inflater, container, savedInstanceState);
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         initViews(view);
         bindViews();
@@ -142,8 +145,10 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             requestData(baseURL + baseIndex);
         }
         int tempInt = (totalIndex - 1) % 4;
-        ImageNode tempNode = imagesList.get(tempInt);
-        loadImage(tempNode.getImageURL(), mImageView);
+        if (imagesList != null && imagesList.size() > tempInt) {
+            ImageNode tempNode = imagesList.get(tempInt);
+            loadImage(tempNode.getImageURL(), mImageView);
+        }
     }
 
     private void updatePreviousImage() {
@@ -175,25 +180,36 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     }
 
     private class MyTask extends AsyncTask<String, String, List<ImageNode>> {
+        private boolean isRunning = true;
 
         @Override
         protected void onPreExecute() {
+            myTaskList.add(this);
         }
 
         @Override
         protected List<ImageNode> doInBackground(String... params) {
 
             String content = HttpRequestManager.getData(params[0]);
-            imagesList = JSONParser.parseFeed(content);
-            return imagesList;
+            if (isRunning) {
+                imagesList = JSONParser.parseFeed(content);
+                return imagesList;
+            }
+            return null;
         }
 
         @Override
         protected void onPostExecute(List<ImageNode> result) {
+            myTaskList.remove(this);
         }
+
+        @Override
+        protected void onCancelled() {
+            isRunning = false;
+        }
+
     }
 
-    List<LazyImageLoadTask> tasks;
 
     private class LazyImageLoadTask extends AsyncTask<String, Void, Bitmap> {
         private ImageView view;
@@ -206,10 +222,10 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         protected void onPreExecute() {
 
             super.onPreExecute();
-            if (tasks.size() == 0) {
+            if (lazyImageLoadTasks.size() == 0) {
                 pb.setVisibility(View.VISIBLE);
             }
-            tasks.add(this);
+            lazyImageLoadTasks.add(this);
         }
 
         @Override
@@ -229,18 +245,24 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
 
         @Override
         protected void onPostExecute(Bitmap result) {
-            tasks.remove(this);
-            if (tasks.size() == 0) {
+            lazyImageLoadTasks.remove(this);
+            if (lazyImageLoadTasks.size() == 0) {
                 pb.setVisibility(View.INVISIBLE);
             }
             if (result != null) {
                 view.setImageBitmap(result);
             } else {
-                Toast.makeText(mActivity, "Failed to Downoa.", Toast.LENGTH_LONG).show();
+                Toast.makeText(mActivity, "Failed to Download.", Toast.LENGTH_LONG).show();
                 return;
             }
         }
 
+        @Override
+        protected void onCancelled() {
+            if (lazyImageLoadTasks.size() == 0 && pb!=null) {
+                pb.setVisibility(View.INVISIBLE);
+            }
+        }
     }
 
 }
