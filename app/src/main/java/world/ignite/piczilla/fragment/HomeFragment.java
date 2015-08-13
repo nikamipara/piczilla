@@ -22,6 +22,7 @@ import android.widget.Toast;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import world.ignite.piczilla.R;
@@ -38,7 +39,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     private int mCurrentIndex;
     private static String LOG_TAG = "HOME_FRAGMENT";
     private static String KEY_INDEX = "INDEX";
-    private static String baseString = "https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q=android&start=";
+    private static String baseURL = "https://ajax.googleapis.com/ajax/services/search/images?v=1.0&q=android&start=";
     private int baseIndex = 0;
     private int totalIndex = 1;
     private Activity mActivity;
@@ -59,6 +60,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         final int cacheSize = maxMemory/8;
 
         cache = new LruCache<>(cacheSize);
+        tasks = new ArrayList<>();
     }
 
     @Override
@@ -100,9 +102,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         super.onActivityCreated(savedInstanceState);
         if (imagesList == null) {
             if (isOnline()) {
-                requestData(baseString+baseIndex);
+                requestData(baseURL +baseIndex);
             } else {
-                Toast.makeText(mActivity, "Network isn't available", Toast.LENGTH_LONG).show();
+                Toast.makeText(mActivity, "Network is Not available Conect to wifi or switch on your Mobile Data.", Toast.LENGTH_LONG).show();
                 getActivity().finish();
             }
         }
@@ -136,7 +138,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         indexView.setText(""+totalIndex);
         if(totalIndex%4 == 1){
             baseIndex++;
-            requestData(baseString+baseIndex);
+            requestData(baseURL +baseIndex);
         }
         int tempInt = (totalIndex-1)%4;
         ImageNode tempNode = imagesList.get(tempInt);
@@ -149,7 +151,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         indexView.setText(""+totalIndex);
         if(totalIndex%4 == 0){
             baseIndex--;
-            requestData(baseString + baseIndex);
+            requestData(baseURL + baseIndex);
         }
         int tempInt = (totalIndex-1)%4;
         ImageNode tempNode = imagesList.get(tempInt);
@@ -190,10 +192,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         }
     }
 
-
+    List<LazyImageLoadTask> tasks;
     private class LazyImageLoadTask extends AsyncTask<String, Void, Bitmap>{
         private ImageView view;
-        ImageNode tempNode;
         public LazyImageLoadTask(ImageView v ){
             view = v;
         }
@@ -201,7 +202,10 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         protected void onPreExecute() {
 
             super.onPreExecute();
-            pb.setVisibility(View.VISIBLE);
+            if (tasks.size() == 0) {
+                pb.setVisibility(View.VISIBLE);
+            }
+            tasks.add(this);
         }
 
         @Override
@@ -221,10 +225,16 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
 
         @Override
         protected void onPostExecute(Bitmap result) {
-            pb.setVisibility(View.GONE);
-            view.setImageBitmap(result);
-            //.put(tempNode.getImageURL(), result);
-            super.onPostExecute(result);
+            tasks.remove(this);
+            if (tasks.size() == 0) {
+                pb.setVisibility(View.INVISIBLE);
+            }
+            if (result !=null){ view.setImageBitmap(result);}
+            else {
+                    Toast.makeText(mActivity, "Failed to Downoa.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+            }
         }
     }
 
