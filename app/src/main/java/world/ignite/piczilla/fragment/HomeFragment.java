@@ -171,6 +171,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             baseIndex--;
             requestData(baseURL + baseIndex);
         }
+
         int tempInt = (totalIndex - 1) % 4;
 
         if (baseIndex == 0 && totalIndex == 1) {
