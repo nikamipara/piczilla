@@ -140,13 +140,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         }
         int tempInt = (totalIndex-1)%4;
         ImageNode tempNode = imagesList.get(tempInt);
-        final Bitmap b = cache.get(tempNode.getImageURL());
-        if(b!=null)
-            mImageView.setImageBitmap(b);
-        else{
-        LazyImageLoadTask mTask = new LazyImageLoadTask();
-        mTask.execute(tempNode);
-        }
+        loadImage(tempNode.getImageURL(),mImageView);
     }
 
     private void updatePreviousImage(){
@@ -155,21 +149,25 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         indexView.setText(""+totalIndex);
         if(totalIndex%4 == 0){
             baseIndex--;
-            requestData(baseString+baseIndex);
+            requestData(baseString + baseIndex);
         }
         int tempInt = (totalIndex-1)%4;
         ImageNode tempNode = imagesList.get(tempInt);
         if(baseIndex == 0 && totalIndex == 1){
             mPrevButton.setEnabled(false);
         }
-        final Bitmap b = cache.get(tempNode.getImageURL());
-        if(b!=null)
-        mImageView.setImageBitmap(b);
-        else{
-            LazyImageLoadTask mTask = new LazyImageLoadTask();
-            mTask.execute(tempNode);
-        }
+        loadImage(tempNode.getImageURL(),mImageView);
 
+    }
+
+    private void loadImage(String  imageURL, ImageView view) {
+        final Bitmap b = cache.get(imageURL);
+        if(b!=null)
+        view.setImageBitmap(b);
+        else{
+            LazyImageLoadTask mTask = new LazyImageLoadTask(view);
+            mTask.execute(imageURL);
+        }
     }
 
     private class MyTask extends AsyncTask<String, String, List<ImageNode>> {
@@ -192,10 +190,12 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     }
 
 
-    private class LazyImageLoadTask extends AsyncTask<ImageNode, Void, Bitmap>{
-
+    private class LazyImageLoadTask extends AsyncTask<String, Void, Bitmap>{
+        private ImageView view;
         ImageNode tempNode;
-
+        public LazyImageLoadTask(ImageView v ){
+            view = v;
+        }
         @Override
         protected void onPreExecute() {
 
@@ -204,14 +204,13 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         }
 
         @Override
-        protected Bitmap doInBackground(ImageNode... params) {
-            tempNode = params[0];
+        protected Bitmap doInBackground(String ... params) {
+            String imageURL = params[0];
             try {
-                String imageUrl = tempNode.getImageURL();
-                InputStream in = (InputStream)new URL(imageUrl).getContent();
+                InputStream in = (InputStream)new URL(imageURL).getContent();
                 final Bitmap bitmap = BitmapFactory.decodeStream(in);
                 in.close();
-                cache.put(imageUrl,bitmap);
+                cache.put(imageURL,bitmap);
                 return bitmap;
             } catch (Exception e){
                 e.printStackTrace();
@@ -222,7 +221,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         @Override
         protected void onPostExecute(Bitmap result) {
             pb.setVisibility(View.GONE);
-            mImageView.setImageBitmap(result);
+            view.setImageBitmap(result);
             //.put(tempNode.getImageURL(), result);
             super.onPostExecute(result);
         }
