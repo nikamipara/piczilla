@@ -46,8 +46,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     private List<ImageNode> imagesList;
     private ProgressBar pb;
 
-   // private HashMap<String, Bitmap> drawableMap;
+    // private HashMap<String, Bitmap> drawableMap;
     private LruCache<String, Bitmap> cache;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,7 +58,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         mActivity = getActivity();
         //drawableMap = new HashMap<String, Bitmap>();
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
-        final int cacheSize = maxMemory/8;
+        final int cacheSize = maxMemory / 8;
 
         cache = new LruCache<>(cacheSize);
         tasks = new ArrayList<>();
@@ -102,7 +103,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         super.onActivityCreated(savedInstanceState);
         if (imagesList == null) {
             if (isOnline()) {
-                requestData(baseURL +baseIndex);
+                requestData(baseURL + baseIndex);
             } else {
                 Toast.makeText(mActivity, "Network is Not available Conect to wifi or switch on your Mobile Data.", Toast.LENGTH_LONG).show();
                 getActivity().finish();
@@ -131,43 +132,43 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         task.execute(uri);
     }
 
-    private void updateNextImage(){
+    private void updateNextImage() {
         pb.setVisibility(View.GONE);
         mPrevButton.setEnabled(true);
         totalIndex++;
-        indexView.setText(""+totalIndex);
-        if(totalIndex%4 == 1){
+        indexView.setText("" + totalIndex);
+        if (totalIndex % 4 == 1) {
             baseIndex++;
-            requestData(baseURL +baseIndex);
+            requestData(baseURL + baseIndex);
         }
-        int tempInt = (totalIndex-1)%4;
+        int tempInt = (totalIndex - 1) % 4;
         ImageNode tempNode = imagesList.get(tempInt);
-        loadImage(tempNode.getImageURL(),mImageView);
+        loadImage(tempNode.getImageURL(), mImageView);
     }
 
-    private void updatePreviousImage(){
+    private void updatePreviousImage() {
         pb.setVisibility(View.GONE);
         totalIndex--;
-        indexView.setText(""+totalIndex);
-        if(totalIndex%4 == 0){
+        indexView.setText("" + totalIndex);
+        if (totalIndex % 4 == 0) {
             baseIndex--;
             requestData(baseURL + baseIndex);
         }
-        int tempInt = (totalIndex-1)%4;
+        int tempInt = (totalIndex - 1) % 4;
         ImageNode tempNode = imagesList.get(tempInt);
-        if(baseIndex == 0 && totalIndex == 1){
+        if (baseIndex == 0 && totalIndex == 1) {
             mPrevButton.setEnabled(false);
         }
-        loadImage(tempNode.getImageURL(),mImageView);
+        loadImage(tempNode.getImageURL(), mImageView);
 
     }
 
-    private void loadImage(String  imageURL, ImageView view) {
+    private void loadImage(String imageURL, ImageView view) {
         view.setImageBitmap(null);
         final Bitmap b = cache.get(imageURL);
-        if(b!=null)
-        view.setImageBitmap(b);
-        else{
+        if (b != null)
+            view.setImageBitmap(b);
+        else {
             LazyImageLoadTask mTask = new LazyImageLoadTask(view);
             mTask.execute(imageURL);
         }
@@ -193,11 +194,14 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     }
 
     List<LazyImageLoadTask> tasks;
-    private class LazyImageLoadTask extends AsyncTask<String, Void, Bitmap>{
+
+    private class LazyImageLoadTask extends AsyncTask<String, Void, Bitmap> {
         private ImageView view;
-        public LazyImageLoadTask(ImageView v ){
+
+        public LazyImageLoadTask(ImageView v) {
             view = v;
         }
+
         @Override
         protected void onPreExecute() {
 
@@ -209,15 +213,15 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         }
 
         @Override
-        protected Bitmap doInBackground(String ... params) {
+        protected Bitmap doInBackground(String... params) {
             String imageURL = params[0];
             try {
-                InputStream in = (InputStream)new URL(imageURL).getContent();
+                InputStream in = (InputStream) new URL(imageURL).getContent();
                 final Bitmap bitmap = BitmapFactory.decodeStream(in);
                 in.close();
-                cache.put(imageURL,bitmap);
+                cache.put(imageURL, bitmap);
                 return bitmap;
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             return null;
@@ -229,13 +233,14 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             if (tasks.size() == 0) {
                 pb.setVisibility(View.INVISIBLE);
             }
-            if (result !=null){ view.setImageBitmap(result);}
-            else {
-                    Toast.makeText(mActivity, "Failed to Downoa.", Toast.LENGTH_LONG).show();
-                    return;
-                }
+            if (result != null) {
+                view.setImageBitmap(result);
+            } else {
+                Toast.makeText(mActivity, "Failed to Downoa.", Toast.LENGTH_LONG).show();
+                return;
             }
         }
+
     }
 
 }
