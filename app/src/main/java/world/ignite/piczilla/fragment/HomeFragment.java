@@ -22,7 +22,6 @@ import android.widget.Toast;
 
 import java.io.InputStream;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
 
 import world.ignite.piczilla.R;
@@ -46,7 +45,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     private List<ImageNode> imagesList;
     private ProgressBar pb;
 
-    private HashMap<String, Bitmap> drawableMap;
+   // private HashMap<String, Bitmap> drawableMap;
     private LruCache<String, Bitmap> cache;
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,10 +54,11 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0);
         }
         mActivity = getActivity();
-        drawableMap = new HashMap<String, Bitmap>();
-        int size = getMaxiu
-                
-        cache = new LruCache<>();
+        //drawableMap = new HashMap<String, Bitmap>();
+        final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+        final int cacheSize = maxMemory/8;
+
+        cache = new LruCache<>(cacheSize);
     }
 
     @Override
@@ -140,8 +140,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         }
         int tempInt = (totalIndex-1)%4;
         ImageNode tempNode = imagesList.get(tempInt);
-        if(drawableMap.containsKey(tempNode.getImageURL()))
-            mImageView.setImageBitmap(drawableMap.get(tempNode.getImageURL()));
+        final Bitmap b = cache.get(tempNode.getImageURL());
+        if(b!=null)
+            mImageView.setImageBitmap(b);
         else{
         LazyImageLoadTask mTask = new LazyImageLoadTask();
         mTask.execute(tempNode);
@@ -161,8 +162,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         if(baseIndex == 0 && totalIndex == 1){
             mPrevButton.setEnabled(false);
         }
-        if(drawableMap.containsKey(tempNode.getImageURL()))
-        mImageView.setImageBitmap(drawableMap.get(tempNode.getImageURL()));
+        final Bitmap b = cache.get(tempNode.getImageURL());
+        if(b!=null)
+        mImageView.setImageBitmap(b);
         else{
             LazyImageLoadTask mTask = new LazyImageLoadTask();
             mTask.execute(tempNode);
@@ -207,8 +209,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
             try {
                 String imageUrl = tempNode.getImageURL();
                 InputStream in = (InputStream)new URL(imageUrl).getContent();
-                Bitmap bitmap = BitmapFactory.decodeStream(in);
+                final Bitmap bitmap = BitmapFactory.decodeStream(in);
                 in.close();
+                cache.put(imageUrl,bitmap);
                 return bitmap;
             } catch (Exception e){
                 e.printStackTrace();
@@ -220,7 +223,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
         protected void onPostExecute(Bitmap result) {
             pb.setVisibility(View.GONE);
             mImageView.setImageBitmap(result);
-            drawableMap.put(tempNode.getImageURL(), result);
+            //.put(tempNode.getImageURL(), result);
             super.onPostExecute(result);
         }
     }
