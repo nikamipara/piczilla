@@ -115,6 +115,18 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     }
 
     @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        for (LazyImageLoadTask t :lazyImageLoadTasks){
+            t.cancel(true);
+        }
+
+        for (MyTask t :myTaskList){
+            t.cancel(true);
+        }
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt(KEY_INDEX, mCurrentIndex);
