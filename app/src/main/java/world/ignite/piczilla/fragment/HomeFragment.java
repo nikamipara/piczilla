@@ -161,6 +161,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener {
     }
 
     private void loadImage(String  imageURL, ImageView view) {
+        view.setImageBitmap(null);
         final Bitmap b = cache.get(imageURL);
         if(b!=null)
         view.setImageBitmap(b);
